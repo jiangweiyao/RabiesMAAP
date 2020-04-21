@@ -70,8 +70,16 @@ Activating your environment makes the software you installed in that environment
 ```
 conda activate RabiesMAAP
 ```
+Run the code (change path if it is installed else where.)
+```
+~/RabiesMAAP/RabiesMAAP_GUI.py
+```
 
 When you are finished running the workflow, exit out of your environment by running `conda deactivate`. Deactivating your environment exits out of your current environment and protects it from being modified by other programs. You can build as many environments as you want and enter and exit out of them. Each environment is separate from each other to prevent version or dependency clashes. The author recommands using Conda/Bioconda to manage your dependencies.
+
+## What the code is doing
+A log of the QC commands and Amplicon dereplication commands are in the results directory. You can view what commands are executed.
+
 
 ## Known issues
 ### Issue 1: Perl clashing for canu
