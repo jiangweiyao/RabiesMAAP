@@ -41,7 +41,7 @@ git clone https://github.com/jiangweiyao/RabiesMAAP.git
 ### Install Both Miniconda and Environment (Skip next 2 steps)
 You can run the prepackaged script install_all.sh to install both Miniconda and make the Conda environment into your home directory (recommended) by using the following command
 ```
-. ~/RabiesMAAP/install_miniconda.sh
+. ~/RabiesMAAP/install_all.sh
 ```
 
 
