@@ -87,8 +87,8 @@ Some systems preset the PERL5LIB variable, causing canu to look for the perl5 li
 `PERL5LIB=`
 
 ## Author
-Jiangwei Yao
-Crystal Gigante
+- Jiangwei Yao
+- Crystal Gigante
 
 ## License 
 Apache License 2.0
