@@ -6,6 +6,7 @@ import glob
 import pandas as pd
 from datetime import date
 from gooey import Gooey, GooeyParser
+from tabulate import tabulate
 
 @Gooey(program_name='RabiesMAAP', 
         default_size=(720, 900),
@@ -93,7 +94,10 @@ def main():
         
         print("progress: {}/{}".format(i+1, 2*len(files)))
 
-    df.to_csv(f"{OutputFolder}/covstat.txt", index = False)
+    #df.to_csv(f"{OutputFolder}/covstat.txt", index = False)
+    dff = open(f"{OutputFolder}/covstat.txt", 'w')
+    dff.write(tabulate(df, headers="keys", showindex=False, tablefmt="pretty", floatfmt=".2f")) 
+    dff.close()
     multiqc_cmd = f"multiqc {qc_dir} -o {OutputFolder}"
     f.write(multiqc_cmd+'\n')
     os.system(multiqc_cmd)
