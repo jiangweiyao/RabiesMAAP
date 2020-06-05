@@ -4,15 +4,17 @@ import sys
 import os
 import glob
 import pandas as pd
+import re
 import argparse
 from datetime import date
+from tabulate import tabulate
 
 def main():
     
     local_path = os.path.dirname(os.path.realpath(__file__))
     #print(local_path)
-    data_path = f"{local_path}/data"
-    canu_helper = f"{local_path}/scripts/cdhit_cluster_filter.R"
+    data_path = f"{local_path}"
+    canu_helper = f"{local_path}/cdhit_cluster_filter.R"
     now = date.today()
 
     cli = argparse.ArgumentParser()
@@ -20,7 +22,7 @@ def main():
     cli.add_argument('-o', '--OutputFolder', help="Output Folder", required=False, default=f'~/rabies_results/output_{now}')
 
     cli.add_argument('--correctedErrorRate', help="Estimated Error Rate", type=float, required=False, default=0.15)
-    cli.add_argument('--readCountMin', help="Minimum Read Counts in Canu to Keep", type=int, required=False, default=100)
+    cli.add_argument('--readCountMin', help="Minimum Read Counts in Canu to Keep", type=int, required=False, default=10)
     cli.add_argument('--genomeSize', help="Estimated Amplicon Size", required=False, type=int, default=2000)
     cli.add_argument('--verbose', help = "Keep Intermediate Files", required=False, action='store_true')
     cli.add_argument('--model', help="Basecall Model", required=False, type=str, default='r941_min_high_g303')
@@ -28,9 +30,13 @@ def main():
     cli.add_argument('--minReadLength', help="Minimum Read Length to Include", required=False, type=int, default=1200)
     args = cli.parse_args()
 
-    files = sorted(glob.glob(args.InputFolder+"/*.fastq"))
+    files = sorted([f for f in glob.glob(args.InputFolder+"/**", recursive = True) if re.search(r'(.*)\.((fastq|fq)(|\.gz))$', f)])
+    #InputFolder = os.path.expanduser(args.InputFolder)
+    #files = sorted(glob.glob(InputFolder+"/*.fastq"))
+    print(files)
     OutputFolder = os.path.expanduser(args.OutputFolder)
     os.environ["PERL5LIB"] = ""
+
     qc_dir= f"{OutputFolder}/qc"
     metric_dir= f"{OutputFolder}/metric"
     assembly_dir= f"{OutputFolder}/assembly"
@@ -45,6 +51,7 @@ def main():
         filec = files[i]
 
         base = os.path.splitext(os.path.basename(filec))[0]
+        base = os.path.splitext(base)[0]
         #print(base)
 
         fastqc_cmd = f"fastqc {filec} -o {qc_dir}"
@@ -86,7 +93,10 @@ def main():
         
         print("progress: {}/{}".format(i+1, 2*len(files)))
 
-    df.to_csv(f"{OutputFolder}/covstat.txt", index = False)
+    #df.to_csv(f"{OutputFolder}/covstat.txt", index = False)
+    dff = open(f"{OutputFolder}/covstat.txt", 'w')
+    dff.write(tabulate(df, headers="keys", showindex=False, tablefmt="psql", floatfmt=".2f"))
+    dff.close()
     multiqc_cmd = f"multiqc {qc_dir} -o {OutputFolder}"
     f.write(multiqc_cmd+'\n')
     os.system(multiqc_cmd)
@@ -99,6 +109,7 @@ def main():
         filec = files[i]
 
         base = os.path.splitext(os.path.basename(filec))[0]
+        base = os.path.splitext(base)[0]
         
         #print(base)
         canu_cmd = f"canu -correct -p asm useGrid=0 -nanopore-raw {filec} -d {assembly_dir}/canu_{base} genomeSize={args.genomeSize} minReadLength={args.minReadLength} readSamplingCoverage={args.readSamplingCoverage} correctedErrorRate={args.correctedErrorRate}"

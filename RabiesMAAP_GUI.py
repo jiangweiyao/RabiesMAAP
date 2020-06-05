@@ -4,6 +4,7 @@ import sys
 import os
 import glob
 import pandas as pd
+import re
 from datetime import date
 from gooey import Gooey, GooeyParser
 from tabulate import tabulate
@@ -17,8 +18,8 @@ def main():
     
     local_path = os.path.dirname(os.path.realpath(__file__))
     #print(local_path)
-    data_path = f"{local_path}/data"
-    canu_helper = f"{local_path}/scripts/cdhit_cluster_filter.R"
+    data_path = f"{local_path}"
+    canu_helper = f"{local_path}/cdhit_cluster_filter.R"
     now = date.today()
 
     cli = GooeyParser(description="Rabies Minion Amplicon Analysis Pipeline")
@@ -27,8 +28,9 @@ def main():
     required_args.add_argument('--OutputFolder', help="Output Folder", required=False, default=f'~/rabies_results/output_{now}')
 
     parser = cli.add_argument_group("Optional Arguments", gooey_options={'columns': 2, 'show_border': True})
+    parser.add_argument('--topN', help="Top N of most frequent amplicons to keep", type=int, required=False, default=2)
+    parser.add_argument('--readCountMin', help="Minimum Read Counts in Canu to Keep", type=int, required=False, default=10)
     parser.add_argument('--correctedErrorRate', help="Estimated Error Rate", type=float, required=False, default=0.15)
-    parser.add_argument('--readCountMin', help="Minimum Read Counts in Canu to Keep", type=int, required=False, default=100)
     parser.add_argument('--genomeSize', help="Estimated Amplicon Size", required=False, type=int, default=2000)
     parser.add_argument('--verbose', help = "Keep Intermediate Files", required=False, widget='BlockCheckbox', action='store_true', gooey_options={ 'checkbox_label': "Yes" })
     parser.add_argument('--model', help="Basecall Model", required=False, type=str, default='r941_min_high_g303')
@@ -36,9 +38,13 @@ def main():
     parser.add_argument('--minReadLength', help="Minimum Read Length to Include", required=False, type=int, default=1200)
     args = cli.parse_args()
 
-    files = sorted(glob.glob(args.InputFolder+"/*.fastq"))
+    files = sorted([f for f in glob.glob(args.InputFolder+"/**", recursive = True) if re.search(r'(.*)\.((fastq|fq)(|\.gz))$', f)])   
+    #InputFolder = os.path.expanduser(args.InputFolder)
+    #files = sorted(glob.glob(InputFolder+"/*.fastq"))
+    print(files)
     OutputFolder = os.path.expanduser(args.OutputFolder)
     os.environ["PERL5LIB"] = ""
+
     qc_dir= f"{OutputFolder}/qc"
     metric_dir= f"{OutputFolder}/metric"
     assembly_dir= f"{OutputFolder}/assembly"
@@ -53,6 +59,7 @@ def main():
         filec = files[i]
 
         base = os.path.splitext(os.path.basename(filec))[0]
+        base = os.path.splitext(base)[0]
         #print(base)
 
         fastqc_cmd = f"fastqc {filec} -o {qc_dir}"
@@ -96,7 +103,7 @@ def main():
 
     #df.to_csv(f"{OutputFolder}/covstat.txt", index = False)
     dff = open(f"{OutputFolder}/covstat.txt", 'w')
-    dff.write(tabulate(df, headers="keys", showindex=False, tablefmt="pretty", floatfmt=".2f")) 
+    dff.write(tabulate(df, headers="keys", showindex=False, tablefmt="psql", floatfmt=".2f")) 
     dff.close()
     multiqc_cmd = f"multiqc {qc_dir} -o {OutputFolder}"
     f.write(multiqc_cmd+'\n')
@@ -110,13 +117,14 @@ def main():
         filec = files[i]
 
         base = os.path.splitext(os.path.basename(filec))[0]
-        
+        base = os.path.splitext(base)[0] 
+
         #print(base)
         canu_cmd = f"canu -correct -p asm useGrid=0 -nanopore-raw {filec} -d {assembly_dir}/canu_{base} genomeSize={args.genomeSize} minReadLength={args.minReadLength} readSamplingCoverage={args.readSamplingCoverage} correctedErrorRate={args.correctedErrorRate}"
         f.write(canu_cmd+'\n')
         cdhit_cmd = f"cd-hit-est -i {assembly_dir}/canu_{base}/asm.correctedReads.fasta.gz -o {assembly_dir}/canu_{base}/asm.correctedReads_80.fasta -c 0.80 -p 1 -d 0 -gap -2"
         f.write(cdhit_cmd+'\n')
-        rbio_cmd = f"{canu_helper} {args.readCountMin} {assembly_dir}/canu_{base}/asm.correctedReads_80.fasta {assembly_dir}/canu_{base}/asm.correctedReads_80.fasta.clstr {assembly_dir}/canu_{base}/asm.correctedReads_80_filtered.fasta"
+        rbio_cmd = f"{canu_helper} {args.readCountMin} {args.topN} {assembly_dir}/canu_{base}/asm.correctedReads_80.fasta {assembly_dir}/canu_{base}/asm.correctedReads_80.fasta.clstr {assembly_dir}/canu_{base}/asm.correctedReads_80_filtered.fasta"
         f.write(rbio_cmd+'\n')
         medaka_cmd = f"medaka_consensus -i {filec} -d {assembly_dir}/canu_{base}/asm.correctedReads_80_filtered.fasta -o {assembly_dir}/medaka_{base} -m {args.model}"
         f.write(medaka_cmd+'\n')

@@ -1,14 +1,15 @@
 #!/usr/bin/env Rscript
-## Usage is cdhit_cluster_filter.R <cutoff> <fasta_file> <clstr_file> <output_file>
+## Usage is cdhit_cluster_filter.R <cutoff> <topN> <fasta_file> <clstr_file> <output_file>
 
 library(Biostrings)
 
 args = commandArgs(trailingOnly=TRUE)
 
 cutoff = as.numeric(args[1])
-fasta_file = args[2]
-clstr_file = args[3]
-output_file = args[4]
+topN = as.numeric(args[2])
+fasta_file = args[3]
+clstr_file = args[4]
+output_file = args[5]
 
 clstr <- read.csv(clstr_file, sep = "\t", row.names = NULL, header = FALSE, stringsAsFactors = FALSE)
 clstr2 <- clstr
@@ -32,8 +33,9 @@ clstr_final <- data.frame(Cluster = clstr2$V1, Reads = reads1, Alignment = align
 clstr_summary <- subset(clstr_final, is.na(Alignment))
 
 clstr_table <- merge(clstr_summary, data.frame(table(clstr_final$Cluster)), by.x = "Cluster", by.y = "Var1")
-clstr_cutoff <- subset(clstr_table, Freq >= cutoff)
-
+clstr_cutoff <-clstr_table[order(clstr_table$Freq, decreasing = TRUE),]
+clstr_cutoff <-head(clstr_cutoff, topN)
+clstr_cutoff <- subset(clstr_cutoff, Freq >= cutoff)
 write.csv(clstr_table, paste0(clstr_file, ".csv"), row.names = FALSE) 
 
 fasta <- readDNAStringSet(fasta_file)
