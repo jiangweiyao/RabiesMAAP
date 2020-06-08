@@ -28,8 +28,8 @@ def main():
     required_args.add_argument('--OutputFolder', help="Output Folder", required=False, default=f'~/rabies_results/output_{now}')
 
     parser = cli.add_argument_group("Optional Arguments", gooey_options={'columns': 2, 'show_border': True})
-    parser.add_argument('--topN', help="Top N of most frequent amplicons to keep", type=int, required=False, default=2)
-    parser.add_argument('--readCountMin', help="Minimum Read Counts in Canu to Keep", type=int, required=False, default=10)
+    parser.add_argument('--clusterTopN', help="Keep top N of the amplicon clusters generated from cdhit ", type=int, required=False, default=2)
+    parser.add_argument('--clusterSizeN', help="Keep amplicon clusters containing greater or equal to N amplicons", type=int, required=False, default=10)
     parser.add_argument('--correctedErrorRate', help="Estimated Error Rate", type=float, required=False, default=0.15)
     parser.add_argument('--genomeSize', help="Estimated Amplicon Size", required=False, type=int, default=2000)
     parser.add_argument('--verbose', help = "Keep Intermediate Files", required=False, widget='BlockCheckbox', action='store_true', gooey_options={ 'checkbox_label': "Yes" })
@@ -122,9 +122,9 @@ def main():
         #print(base)
         canu_cmd = f"canu -correct -p asm useGrid=0 -nanopore-raw {filec} -d {assembly_dir}/canu_{base} genomeSize={args.genomeSize} minReadLength={args.minReadLength} readSamplingCoverage={args.readSamplingCoverage} correctedErrorRate={args.correctedErrorRate}"
         f.write(canu_cmd+'\n')
-        cdhit_cmd = f"cd-hit-est -i {assembly_dir}/canu_{base}/asm.correctedReads.fasta.gz -o {assembly_dir}/canu_{base}/asm.correctedReads_80.fasta -c 0.80 -p 1 -d 0 -gap -2"
+        cdhit_cmd = f"cd-hit-est -i {assembly_dir}/canu_{base}/asm.correctedReads.fasta.gz -o {assembly_dir}/canu_{base}/asm.correctedReads_80.fasta -c 0.80 -p 1 -d 0 -gap -1"
         f.write(cdhit_cmd+'\n')
-        rbio_cmd = f"{canu_helper} {args.readCountMin} {args.topN} {assembly_dir}/canu_{base}/asm.correctedReads_80.fasta {assembly_dir}/canu_{base}/asm.correctedReads_80.fasta.clstr {assembly_dir}/canu_{base}/asm.correctedReads_80_filtered.fasta"
+        rbio_cmd = f"{canu_helper} {args.clusterSizeN} {args.clusterTopN} {assembly_dir}/canu_{base}/asm.correctedReads_80.fasta {assembly_dir}/canu_{base}/asm.correctedReads_80.fasta.clstr {assembly_dir}/canu_{base}/asm.correctedReads_80_filtered.fasta"
         f.write(rbio_cmd+'\n')
         medaka_cmd = f"medaka_consensus -i {filec} -d {assembly_dir}/canu_{base}/asm.correctedReads_80_filtered.fasta -o {assembly_dir}/medaka_{base} -m {args.model}"
         f.write(medaka_cmd+'\n')

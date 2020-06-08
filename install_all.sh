@@ -9,4 +9,4 @@ conda config --set auto_activate_base false
 . ~/.bashrc
 rm Miniconda3-latest-Linux-x86_64.sh
 
-conda env create -f ~/RabiesMAAP/environment.yml
+conda create -n RabiesMAAP canu medaka python gooey tabulate pandas cd-hit fastqc multiqc bioconductor-biostrings -y

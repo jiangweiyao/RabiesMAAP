@@ -1,12 +1,12 @@
 # Rabies Minion Amplicon Analysis Pipeline 
 
-This pipeline takes basecalled, demultiplexed, and trimmed fastq files from Nanopore sequencing.
-It QC the fastq files using fastqc and aggregates the reports using multiqc.
-It mapps to the reference rabies genomes to get coverage of N and G area.
-It uses Canu to correct the reads into amplicons.
-The amplicons are clustered using CD-hit-est. 
-Clusters with greater than N amplicons are selected, and
-then, polished by Medaka the fastq files again.
+This pipeline takes basecalled, demultiplexed, and trimmed fastq files from Nanopore sequencing:
+1. It QC the fastq files using fastqc and aggregates the reports using multiqc.
+2. It maps to the reference rabies genomes to get coverage of N and G area.
+3. It uses Canu to correct the reads into amplicons.
+4. The amplicons are clustered using CD-hit-est. 
+5. The top N clusters and clusters with greater than N amplicons are selected (to adjust for error and read quality), and
+6. then, polished by Medaka the fastq files again.
 
 This workflow depends on Bioconda to install the environmental dependencies.
 And then run the attached script using the environment.
@@ -56,13 +56,13 @@ https://conda.io/projects/conda/en/latest/user-guide/install/linux.html
 
 ### Clone the environment. Need to do once.
 
-We use conda to create an environment (that we can activate and deactivate) to install our dependent software and resolve their dependencies. This environment is called "RabiesMAAP". The following command assumes your environment file is in your home path. Modify as appropriate.
+We use conda to create an environment (that we can activate and deactivate) to install our dependent software and resolve their dependencies. This environment is called "RabiesMAAP". 
 
 ```
-conda env create -f ~/RabiesMAAP/environment.yml
+conda create -n RabiesMAAP canu medaka python gooey tabulate pandas cd-hit fastqc multiqc bioconductor-biostrings -y
 ```
 
-The command to generate the environment originally is in the included `conda_env.txt` file. 
+Conda will automatically figure out and install all dependencies for you. It might take some time for Conda to resolve the dependencies and install everything for you. 
 
 ## Run the code.
 
